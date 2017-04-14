@@ -1,7 +1,10 @@
-//
-//  VideoHelper.h
-//
-
+/**********************************************************************************
+ * (c) 2017, Master Technology
+ * Licensed under a MIT License
+ *
+ * Any questions please feel free to email me or put a issue up on the private repo
+ *                                                     Nathan@master-technology.com
+ *********************************************************************************/
 #import <Foundation/Foundation.h>
 
 @class VideoHelper;

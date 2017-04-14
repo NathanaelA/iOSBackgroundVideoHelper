@@ -1,8 +1,10 @@
-//
-//  VideoHelper.m
-//  version 0.0.1
-//
-
+/**********************************************************************************
+ * (c) 2017, Master Technology
+ * Licensed under a MIT License
+ *
+ * Any questions please feel free to email me or put a issue up on the private repo
+ * Version 0.1.0                                      Nathan@master-technology.com
+ *********************************************************************************/
 
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
@@ -161,11 +163,13 @@ Used to wait for the queue lock
                     NSInteger cmd = [[entry valueForKey:@"command"] intValue];
                     NSInteger pid = [[entry valueForKey:@"id"] intValue];
                     NSInteger vid = [[entry valueForKey:@"dataNumber"] intValue];
-                    NSString *Data = [[entry valueForKey:@"dataString"] copy];
+                    AVURLAsset *asset = [entry objectForKey:@"AVAsset"];
+                    NSString *data = [[entry valueForKey:@"dataString"] copy];
+                    NSString *title = [[entry valueForKey:@"dataTitle"] copy];
                     [dict removeObjectAtIndex: 0];
                     [theLock unlock];
 
-                    [self handleData: cmd data: Data vid: vid pid: pid];
+                    [self handleData: cmd data: data vid: vid pid: pid asset: asset title: title];
                     [self runLoop: 0.5];
                 }
           } while (cnt > 0);
@@ -233,7 +237,7 @@ Used to wait for the queue lock
 /*
   Handles each request from the queue so we know what we are doing
 */
-- (void)handleData: (NSInteger)command data:(NSString *)data vid: (NSInteger)vid pid:(NSInteger)pid
+- (void)handleData: (NSInteger)command data:(NSString *)data vid: (NSInteger)vid pid:(NSInteger)pid asset: (AVURLAsset *)asset  title: (NSString *)title
 {
     if (debugging) {
         NSLog(@"Handling Data Command: %ld, vid: %ld pid: %ld", (long)command, (long)vid, (long)pid);
@@ -242,7 +246,7 @@ Used to wait for the queue lock
     switch (command) {
         case 0: [self closeConnection: pid]; break;
         case 1: [self setSetting: pid data:data vid:vid]; break;
-        case 2: [self downloadVideo: pid data:data bitRate:vid]; break;
+        case 2: [self downloadVideo: pid data:data bitRate:vid asset: asset title: title]; break;
         case 3: [self cancelVideo: pid]; break;
         default:
             return;
@@ -303,7 +307,7 @@ Used to wait for the queue lock
 /*
  This starts the download
 */
-- (void)downloadVideo: (NSInteger)pid data:(NSString *)data bitRate:(NSInteger)bitRate
+- (void)downloadVideo: (NSInteger)pid data:(NSString *)data bitRate:(NSInteger)bitRate asset:(AVURLAsset*)asset title:(NSString *)title
 {
     if (debugging) {
       NSLog(@"Downloading %ld Video Connection %@", (long)pid, data);
@@ -316,8 +320,15 @@ Used to wait for the queue lock
     tracking[ppid] = [NSString stringWithFormat:@"%f",[[NSDate date] timeIntervalSince1970]];
 
     // Configure File to download
-    NSURL *assetURL = [NSURL URLWithString:data];
-    AVURLAsset *hlsAsset = [AVURLAsset assetWithURL:assetURL];
+    AVURLAsset *hlsAsset;
+     if (asset == nil || asset == [NSNull null]) {
+        NSURL *assetURL;
+
+        assetURL = [NSURL URLWithString:data];
+        hlsAsset = [AVURLAsset assetWithURL:assetURL];
+     } else {
+        hlsAsset = asset;
+     }
 
     if (avAssetDownloadSession == nil) {
        // Configure the Download Session
@@ -328,7 +339,7 @@ Used to wait for the queue lock
     }
 
     // Download Task
-    AVAssetDownloadTask *avAssetDownloadTask = [avAssetDownloadSession assetDownloadTaskWithURLAsset:hlsAsset assetTitle:@"downloadedMedia" assetArtworkData:nil options:@{AVAssetDownloadTaskMinimumRequiredMediaBitrateKey : @(bitRate)}];
+    AVAssetDownloadTask *avAssetDownloadTask = [avAssetDownloadSession assetDownloadTaskWithURLAsset:hlsAsset assetTitle:title assetArtworkData:nil options:@{AVAssetDownloadTaskMinimumRequiredMediaBitrateKey : @(bitRate)}];
     avAssetDownloadTask.taskDescription = ppid;
 
      // Start the Task
