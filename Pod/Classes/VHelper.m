@@ -404,6 +404,14 @@ This is one of the handlers required for the AVAssetDownloader Delegates
 
         // Get the File Size
         unsigned long long int fileSize = [self folderSize: [location path]];
+        if (debugging) {
+           NSLog(@"Size: %llu, length: %ld total", fileSize, total );
+        }
+
+        // Don't allow a divide by zero...
+        if (total == 0) {
+            total=1;
+        }
 
         // Send the data back to the main UI
         [self sendToUI: pid data:[location path] bitRate:(fileSize/total) error: 0];
